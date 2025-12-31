@@ -1,0 +1,138 @@
+<Window x:Class="DeepSeeArch.UI.WebPreview"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Web Preview"
+        Width="1100"
+        Height="800"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Web Preview" 
+                              FontSize="20" 
+                              FontWeight="Bold"/>
+                    <TextBlock x:Name="DomainText"
+                              FontSize="12" 
+                              Opacity="0.8"
+                              Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="1"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="CloseButton_Click">
+                    <materialDesign:PackIcon Kind="Close" Width="24" Height="24"/>
+                </Button>
+            </Grid>
+        </materialDesign:ColorZone>
+
+        <!-- Navigation Bar -->
+        <Border Grid.Row="1" 
+               Background="{DynamicResource MaterialDesignDivider}"
+               Padding="8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Back Button -->
+                <Button Grid.Column="0"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="BackButton_Click"
+                       ToolTip="Zurück">
+                    <materialDesign:PackIcon Kind="ArrowLeft" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Forward Button -->
+                <Button Grid.Column="1"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="ForwardButton_Click"
+                       ToolTip="Vorwärts"
+                       Margin="4,0,0,0">
+                    <materialDesign:PackIcon Kind="ArrowRight" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Refresh Button -->
+                <Button Grid.Column="2"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="RefreshButton_Click"
+                       ToolTip="Neu laden"
+                       Margin="4,0,0,0">
+                    <materialDesign:PackIcon Kind="Refresh" Width="20" Height="20"/>
+                </Button>
+
+                <!-- URL Bar -->
+                <TextBox x:Name="UrlTextBox"
+                        Grid.Column="3"
+                        Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                        Margin="8,0"
+                        VerticalAlignment="Center"
+                        KeyDown="UrlTextBox_KeyDown"
+                        IsReadOnly="True"/>
+
+                <!-- Open in External Browser -->
+                <Button Grid.Column="4"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="OpenExternal_Click"
+                       ToolTip="In externem Browser öffnen"
+                       Margin="0,0,4,0">
+                    <materialDesign:PackIcon Kind="OpenInNew" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Screenshot Button -->
+                <Button Grid.Column="5"
+                       Style="{StaticResource MaterialDesignToolButton}"
+                       Click="Screenshot_Click"
+                       ToolTip="Screenshot erstellen">
+                    <materialDesign:PackIcon Kind="Camera" Width="20" Height="20"/>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- WebView2 Browser -->
+        <Grid Grid.Row="2">
+            <wv2:WebView2 x:Name="WebView"
+                         NavigationStarting="WebView_NavigationStarting"
+                         NavigationCompleted="WebView_NavigationCompleted"/>
+
+            <!-- Loading Overlay -->
+            <Border x:Name="LoadingOverlay"
+                   Background="#80000000"
+                   Visibility="Collapsed">
+                <StackPanel HorizontalAlignment="Center"
+                           VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True"
+                               Width="200"
+                               Height="8"
+                               Margin="0,0,0,16"/>
+                    <TextBlock Text="Seite wird geladen..."
+                              FontSize="14"
+                              Foreground="White"
+                              HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>

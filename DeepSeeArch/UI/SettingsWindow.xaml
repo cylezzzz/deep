@@ -1,0 +1,154 @@
+<Window x:Class="DeepSeeArch.UI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Einstellungen"
+        Width="700"
+        Height="600"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" Mode="PrimaryMid" Padding="16">
+            <TextBlock Text="⚙️ Einstellungen" FontSize="20" FontWeight="Bold"/>
+        </materialDesign:ColorZone>
+
+        <!-- Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16">
+            <StackPanel>
+                
+                <!-- Ollama Einstellungen -->
+                <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🤖 Ollama AI-Modelle" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Ollama URL -->
+                        <TextBox Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                materialDesign:HintAssist.Hint="Ollama URL"
+                                Text="{Binding OllamaUrl}"
+                                Margin="0,0,0,16"/>
+
+                        <!-- Primäres Modell -->
+                        <ComboBox Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                 materialDesign:HintAssist.Hint="Primäres Modell (Standard)"
+                                 ItemsSource="{Binding AvailableModels}"
+                                 SelectedItem="{Binding SelectedPrimaryModel}"
+                                 Margin="0,0,0,8"/>
+                        <TextBlock Text="Wird für Account-Extraktion und strukturierte Daten verwendet"
+                                  FontSize="11"
+                                  Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Analyse Modell -->
+                        <ComboBox Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                                 materialDesign:HintAssist.Hint="Text-Analyse Modell"
+                                 ItemsSource="{Binding AvailableModels}"
+                                 SelectedItem="{Binding SelectedAnalysisModel}"
+                                 Margin="0,0,0,8"/>
+                        <TextBlock Text="Für Content-Analyse und Missbrauchs-Erkennung"
+                                  FontSize="11"
+                                  Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Refresh Button -->
+                        <Button Content="🔄 Modelle neu laden"
+                               Command="{Binding RefreshModelsCommand}"
+                               Style="{StaticResource MaterialDesignOutlinedButton}"
+                               HorizontalAlignment="Left"/>
+                    </StackPanel>
+                </materialDesign:Card>
+
+                <!-- Fuzzy-Matching Einstellungen -->
+                <materialDesign:Card Padding="16" Margin="0,0,0,16">
+                    <StackPanel>
+                        <TextBlock Text="🔍 Fuzzy-Matching" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Similarity Threshold -->
+                        <StackPanel Margin="0,0,0,16">
+                            <TextBlock Text="Mindest-Ähnlichkeit (%):" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider Grid.Column="0"
+                                       Minimum="50"
+                                       Maximum="100"
+                                       Value="{Binding MinSimilarityScore}"
+                                       TickFrequency="5"
+                                       IsSnapToTickEnabled="True"
+                                       Margin="0,0,16,0"/>
+                                <TextBlock Grid.Column="1"
+                                          Text="{Binding MinSimilarityScore, StringFormat='{}{0}%'}"
+                                          FontWeight="Bold"
+                                          VerticalAlignment="Center"
+                                          MinWidth="50"/>
+                            </Grid>
+                            <TextBlock Text="Höhere Werte = Genauere Treffer, weniger Variationen"
+                                      FontSize="11"
+                                      Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                      Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </StackPanel>
+                </materialDesign:Card>
+
+                <!-- Suche Einstellungen -->
+                <materialDesign:Card Padding="16">
+                    <StackPanel>
+                        <TextBlock Text="🌐 Such-Einstellungen" 
+                                  FontSize="16" 
+                                  FontWeight="SemiBold"
+                                  Margin="0,0,0,16"/>
+
+                        <!-- Max Results -->
+                        <TextBox Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                materialDesign:HintAssist.Hint="Max. Ergebnisse pro Suchmaschine"
+                                Text="{Binding MaxResultsPerEngine}"
+                                Margin="0,0,0,16"/>
+
+                        <!-- Search Timeout -->
+                        <TextBox Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                                materialDesign:HintAssist.Hint="Such-Timeout (Sekunden)"
+                                Text="{Binding SearchTimeout}"
+                                Margin="0,0,0,16"/>
+
+                        <!-- Enable Adult Content Filter -->
+                        <CheckBox Content="Adult-Content-Filter aktivieren"
+                                 IsChecked="{Binding FilterAdultContent}"
+                                 Margin="0,0,0,8"/>
+                    </StackPanel>
+                </materialDesign:Card>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer -->
+        <Border Grid.Row="2" 
+               Background="{DynamicResource MaterialDesignDivider}" 
+               Padding="16">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Speichern"
+                       Command="{Binding SaveCommand}"
+                       Style="{StaticResource MaterialDesignRaisedButton}"
+                       Margin="0,0,8,0"/>
+                <Button Content="Abbrechen"
+                       Click="CancelButton_Click"
+                       Style="{StaticResource MaterialDesignFlatButton}"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

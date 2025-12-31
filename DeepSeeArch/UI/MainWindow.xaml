@@ -1,0 +1,303 @@
+<Window x:Class="DeepSeeArch.UI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="DeepSeeArch — Identity &amp; Online Presence Scanner"
+        Width="1400"
+        Height="900"
+        MinWidth="1000"
+        MinHeight="600"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{materialDesign:MaterialDesignFont}"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13">
+
+    <Window.Resources>
+        <!-- Custom Styles -->
+        <Style x:Key="SearchBoxStyle" TargetType="TextBox" BasedOn="{StaticResource MaterialDesignOutlinedTextBox}">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Padding" Value="12,14"/>
+            <Setter Property="materialDesign:HintAssist.Hint" Value="Name, Alias, Keyword oder URL eingeben..."/>
+        </Style>
+
+        <Style x:Key="CategoryTabStyle" TargetType="RadioButton" BasedOn="{StaticResource MaterialDesignTabRadioButton}">
+            <Setter Property="Margin" Value="4,0"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+
+        <Style x:Key="ResultCardStyle" TargetType="materialDesign:Card">
+            <Setter Property="Margin" Value="8"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="UniformCornerRadius" Value="8"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:ColorZone Grid.Row="0" 
+                                   Mode="PrimaryMid" 
+                                   Padding="16,12"
+                                   materialDesign:ElevationAssist.Elevation="Dp4">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Magnify" 
+                                            Width="32" 
+                                            Height="32" 
+                                            VerticalAlignment="Center"
+                                            Margin="0,0,12,0"/>
+                    <TextBlock Text="DeepSeeArch" 
+                              FontSize="24" 
+                              FontWeight="Bold" 
+                              VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Style="{StaticResource MaterialDesignToolButton}"
+                            ToolTip="Cases verwalten"
+                            Command="{Binding OpenCasesCommand}"
+                            Margin="8,0">
+                        <materialDesign:PackIcon Kind="FolderOpen" Width="24" Height="24"/>
+                    </Button>
+                    <Button Style="{StaticResource MaterialDesignToolButton}"
+                            ToolTip="Einstellungen"
+                            Command="{Binding OpenSettingsCommand}"
+                            Margin="8,0">
+                        <materialDesign:PackIcon Kind="Settings" Width="24" Height="24"/>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </materialDesign:ColorZone>
+
+        <!-- Suchfeld -->
+        <Grid Grid.Row="1" Margin="24,24,24,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBox Grid.Column="0"
+                     Style="{StaticResource SearchBoxStyle}"
+                     Text="{Binding Query, UpdateSourceTrigger=PropertyChanged}"
+                     KeyDown="SearchBox_KeyDown"/>
+
+            <Button Grid.Column="1"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Height="56"
+                    Width="120"
+                    Margin="12,0,0,0"
+                    Command="{Binding ScanCommand}"
+                    IsEnabled="{Binding IsNotScanning}">
+                <StackPanel Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Magnify" 
+                                            Width="20" 
+                                            Height="20"
+                                            Margin="0,0,8,0"/>
+                    <TextBlock Text="Scan" FontSize="15" FontWeight="Medium"/>
+                </StackPanel>
+            </Button>
+        </Grid>
+
+        <!-- Kategorie-Tabs -->
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    Margin="24,0,24,16"
+                    HorizontalAlignment="Center">
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Alle"
+                        IsChecked="{Binding ShowAllCategories}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Web"
+                        IsChecked="{Binding ShowWebOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Bilder"
+                        IsChecked="{Binding ShowImagesOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Videos"
+                        IsChecked="{Binding ShowVideosOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Social"
+                        IsChecked="{Binding ShowSocialOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Foren"
+                        IsChecked="{Binding ShowForumsOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Archive"
+                        IsChecked="{Binding ShowArchivesOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="18+"
+                        IsChecked="{Binding ShowAdultOnly}"
+                        GroupName="CategoryFilter"/>
+            <RadioButton Style="{StaticResource CategoryTabStyle}"
+                        Content="Dokumente"
+                        IsChecked="{Binding ShowDocumentsOnly}"
+                        GroupName="CategoryFilter"/>
+        </StackPanel>
+
+        <!-- Ergebnisse -->
+        <Grid Grid.Row="3" Margin="24,0">
+            <!-- Loading Indicator -->
+            <StackPanel VerticalAlignment="Center" 
+                       HorizontalAlignment="Center"
+                       Visibility="{Binding IsScanning, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                            Value="0"
+                            IsIndeterminate="True"
+                            Width="64"
+                            Height="64"/>
+                <TextBlock Text="Scanning..." 
+                          FontSize="16" 
+                          Margin="0,16,0,0"
+                          HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <!-- Results List -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                         Visibility="{Binding HasResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <ItemsControl ItemsSource="{Binding FilteredResults}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <materialDesign:Card Style="{StaticResource ResultCardStyle}">
+                                <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Titel & URL -->
+                                    <StackPanel Grid.Row="0">
+                                        <TextBlock Text="{Binding Title}" 
+                                                  FontSize="16" 
+                                                  FontWeight="SemiBold"
+                                                  TextWrapping="Wrap"
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding Url}" 
+                                                  FontSize="12" 
+                                                  Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                                  TextWrapping="Wrap"
+                                                  Margin="0,4,0,0"/>
+                                    </StackPanel>
+
+                                    <!-- Snippet -->
+                                    <TextBlock Grid.Row="1" 
+                                              Text="{Binding Snippet}" 
+                                              TextWrapping="Wrap"
+                                              Margin="0,8,0,0"
+                                              FontSize="13"/>
+
+                                    <!-- Metadaten -->
+                                    <StackPanel Grid.Row="2" 
+                                               Orientation="Horizontal" 
+                                               Margin="0,12,0,0">
+                                        <materialDesign:Chip Content="{Binding Category}" 
+                                                            Margin="0,0,8,0"
+                                                            FontSize="11"/>
+                                        <materialDesign:Chip Content="{Binding Domain}" 
+                                                            Margin="0,0,8,0"
+                                                            FontSize="11"
+                                                            Background="{DynamicResource MaterialDesignDivider}"/>
+                                        <materialDesign:Chip Margin="0,0,8,0" FontSize="11">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="Star" 
+                                                                        Width="14" 
+                                                                        Height="14"
+                                                                        Margin="0,0,4,0"/>
+                                                <TextBlock Text="{Binding ConfidenceScore, StringFormat='{}{0:P0}'}"/>
+                                            </StackPanel>
+                                        </materialDesign:Chip>
+                                    </StackPanel>
+
+                                    <!-- Actions -->
+                                    <StackPanel Grid.Row="3" 
+                                               Orientation="Horizontal" 
+                                               Margin="0,12,0,0">
+                                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                               Content="Öffnen"
+                                               Command="{Binding DataContext.OpenUrlCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               CommandParameter="{Binding Url}"/>
+                                        <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                               Content="Details"
+                                               Command="{Binding DataContext.ShowDetailsCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                               CommandParameter="{Binding}"/>
+                                    </StackPanel>
+                                </Grid>
+                            </materialDesign:Card>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- No Results -->
+            <StackPanel VerticalAlignment="Center" 
+                       HorizontalAlignment="Center"
+                       Visibility="{Binding ShowNoResults, Converter={StaticResource BooleanToVisibilityConverter}}">
+                <materialDesign:PackIcon Kind="MagnifyClose" 
+                                        Width="96" 
+                                        Height="96"
+                                        Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                <TextBlock Text="Keine Ergebnisse gefunden" 
+                          FontSize="18" 
+                          Margin="0,16,0,0"
+                          HorizontalAlignment="Center"
+                          Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Status Bar -->
+        <materialDesign:ColorZone Grid.Row="4" 
+                                   Mode="PrimaryLight" 
+                                   Padding="16,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" 
+                          Text="{Binding StatusMessage}" 
+                          VerticalAlignment="Center"
+                          FontSize="12"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <TextBlock Text="{Binding ResultCount, StringFormat='Ergebnisse: {0}'}" 
+                              VerticalAlignment="Center"
+                              FontSize="12"
+                              Margin="0,0,16,0"/>
+                    <Button Style="{StaticResource MaterialDesignFlatButton}"
+                           Content="Case speichern"
+                           Command="{Binding SaveCaseCommand}"
+                           IsEnabled="{Binding HasResults}"/>
+                    <Button Style="{StaticResource MaterialDesignFlatButton}"
+                           Content="Exportieren"
+                           Command="{Binding ExportCommand}"
+                           IsEnabled="{Binding HasResults}"/>
+                </StackPanel>
+            </Grid>
+        </materialDesign:ColorZone>
+    </Grid>
+</Window>
