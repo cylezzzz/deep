@@ -1,244 +1,180 @@
-# DeepSeeArch Build Script
-# PowerShell Script für automatisierten Build-Prozess
+# build.ps1
+# DeepSeeArch Build Script (PowerShell 5.1+ kompatibel)
+# - Restore / Build / Test / Publish
+# - Keine kaputten try/catch-Klammern
+# - Keine überschriebenen PowerShell-Cmdlets (z.B. Write-Error)
 
+[CmdletBinding()]
 param(
-    [Parameter(Mandatory=$false)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet('Debug', 'Release')]
     [string]$Configuration = 'Release',
-    
-    [Parameter(Mandatory=$false)]
+
+    [Parameter(Mandatory = $false)]
     [switch]$Clean,
-    
-    [Parameter(Mandatory=$false)]
-    [switch]$Publish,
-    
-    [Parameter(Mandatory=$false)]
+
+    [Parameter(Mandatory = $false)]
     [switch]$Test,
-    
-    [Parameter(Mandatory=$false)]
-    [switch]$Package
+
+    [Parameter(Mandatory = $false)]
+    [switch]$Publish,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SelfContained,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$SingleFile
 )
 
 $ErrorActionPreference = "Stop"
 
-# Farben für Output
-function Write-Success { Write-Host $args -ForegroundColor Green }
-function Write-Info { Write-Host $args -ForegroundColor Cyan }
-function Write-Error { Write-Host $args -ForegroundColor Red }
-function Write-Warning { Write-Host $args -ForegroundColor Yellow }
+function Write-Ok([string]$msg)   { Write-Host $msg -ForegroundColor Green }
+function Write-Info([string]$msg) { Write-Host $msg -ForegroundColor Cyan }
+function Write-Warn([string]$msg) { Write-Host $msg -ForegroundColor Yellow }
+function Write-Fail([string]$msg) { Write-Host $msg -ForegroundColor Red }
 
-# Header
 Write-Info "================================================"
 Write-Info "  DeepSeeArch Build Script"
 Write-Info "================================================"
 Write-Info ""
 
-# Prüfe ob .NET SDK installiert ist
-Write-Info "Checking .NET SDK..."
-try {
-    $dotnetVersion = dotnet --version
-    Write-Success "✓ .NET SDK found: $dotnetVersion"
-} catch {
-    Write-Error "✗ .NET SDK not found. Please install .NET 8 SDK."
+# Paths
+$RootPath    = $PSScriptRoot
+$ProjectPath = Join-Path $RootPath "DeepSeeArch"
+$ProjectFile = Join-Path $ProjectPath "DeepSeeArch.csproj"
+$OutPath     = Join-Path $RootPath "out"
+$PublishPath = Join-Path $OutPath "publish"
+
+Write-Info "Root Path   : $RootPath"
+Write-Info "Project File: $ProjectFile"
+Write-Info "Config      : $Configuration"
+Write-Info ""
+
+if (-not (Test-Path $ProjectFile)) {
+    Write-Fail "Project file not found: $ProjectFile"
     exit 1
 }
 
-# Projekt-Pfade
-$rootPath = $PSScriptRoot
-$projectPath = Join-Path $rootPath "DeepSeeArch"
-$projectFile = Join-Path $projectPath "DeepSeeArch.csproj"
-$outputPath = Join-Path $rootPath "build"
-$publishPath = Join-Path $outputPath "publish"
-
-Write-Info "Root Path: $rootPath"
-Write-Info "Project Path: $projectPath"
+# Check dotnet
+Write-Info "Checking .NET SDK..."
+try {
+    $dotnetVersion = & dotnet --version
+    Write-Ok "OK: dotnet $dotnetVersion"
+} catch {
+    Write-Fail "dotnet not found. Install .NET 8 SDK (recommended)."
+    exit 1
+}
 Write-Info ""
 
 # Clean
 if ($Clean) {
-    Write-Info "Cleaning previous builds..."
-    
-    if (Test-Path $outputPath) {
-        Remove-Item $outputPath -Recurse -Force
-        Write-Success "✓ Cleaned build directory"
-    }
-    
-    # Clean bin/obj
-    Get-ChildItem -Path $rootPath -Include bin,obj -Recurse -Directory | Remove-Item -Recurse -Force
-    Write-Success "✓ Cleaned bin/obj directories"
-    
-    Write-Info ""
-}
-
-# Restore NuGet Packages
-Write-Info "Restoring NuGet packages..."
-try {
-    dotnet restore $projectFile
-    Write-Success "✓ NuGet packages restored"
-} catch {
-    Write-Error "✗ Failed to restore NuGet packages"
-    exit 1
-}
-Write-Info ""
-
-# Build
-Write-Info "Building project ($Configuration)..."
-try {
-    dotnet build $projectFile `
-        --configuration $Configuration `
-        --no-restore `
-        --verbosity minimal
-    Write-Success "✓ Build completed successfully"
-} catch {
-    Write-Error "✗ Build failed"
-    exit 1
-}
-Write-Info ""
-
-# Test
-if ($Test) {
-    Write-Info "Running tests..."
+    Write-Info "Cleaning build output..."
     try {
-        # Wenn Tests vorhanden
-        $testProjects = Get-ChildItem -Path $rootPath -Filter "*.Tests.csproj" -Recurse
-        
-        if ($testProjects.Count -gt 0) {
-            foreach ($testProject in $testProjects) {
-                dotnet test $testProject.FullName `
-                    --configuration $Configuration `
-                    --no-build `
-                    --verbosity minimal
-            }
-            Write-Success "✓ All tests passed"
-        } else {
-            Write-Warning "⚠ No test projects found"
+        if (Test-Path $OutPath) {
+            Remove-Item $OutPath -Recurse -Force
         }
+
+        # Clean bin/obj
+        $dirs = Get-ChildItem -Path $RootPath -Recurse -Directory -Force | Where-Object { $_.Name -in @("bin", "obj") }
+        foreach ($d in $dirs) {
+            try {
+                Remove-Item $d.FullName -Recurse -Force -ErrorAction SilentlyContinue
+            } catch { }
+        }
+
+        Write-Ok "OK: Cleaned"
     } catch {
-        Write-Error "✗ Tests failed"
+        Write-Fail "Clean failed: $($_.Exception.Message)"
         exit 1
     }
     Write-Info ""
 }
 
-# Publish
-if ($Publish) {
-    Write-Info "Publishing application..."
-    
-    # Erstelle Publish-Verzeichnis
-    New-Item -Path $publishPath -ItemType Directory -Force | Out-Null
-    
-    # Verschiedene Publish-Varianten
-    $publishConfigs = @(
-        @{
-            Name = "win-x64-selfcontained"
-            Runtime = "win-x64"
-            SelfContained = $true
-            SingleFile = $true
-        },
-        @{
-            Name = "win-x64-framework"
-            Runtime = "win-x64"
-            SelfContained = $false
-            SingleFile = $false
-        }
-    )
-    
-    foreach ($config in $publishConfigs) {
-        $targetPath = Join-Path $publishPath $config.Name
-        
-        Write-Info "  Publishing $($config.Name)..."
-        
-        $publishArgs = @(
-            "publish"
-            $projectFile
-            "--configuration", $Configuration
-            "--runtime", $config.Runtime
-            "--output", $targetPath
-            "--no-build"
-        )
-        
-        if ($config.SelfContained) {
-            $publishArgs += "--self-contained", "true"
+# Restore
+Write-Info "Restoring NuGet packages..."
+try {
+    & dotnet restore $ProjectFile
+    Write-Ok "OK: Restore"
+} catch {
+    Write-Fail "Restore failed: $($_.Exception.Message)"
+    exit 1
+}
+Write-Info ""
+
+# Build
+Write-Info "Building..."
+try {
+    & dotnet build $ProjectFile --configuration $Configuration --no-restore
+    Write-Ok "OK: Build"
+} catch {
+    Write-Fail "Build failed: $($_.Exception.Message)"
+    exit 1
+}
+Write-Info ""
+
+# Test (optional)
+if ($Test) {
+    Write-Info "Running tests..."
+    try {
+        $testProjects = Get-ChildItem -Path $RootPath -Recurse -Filter "*.Tests.csproj" -File -ErrorAction SilentlyContinue
+        if ($null -eq $testProjects -or $testProjects.Count -eq 0) {
+            Write-Warn "No test projects found (*.Tests.csproj)."
         } else {
-            $publishArgs += "--self-contained", "false"
-        }
-        
-        if ($config.SingleFile) {
-            $publishArgs += "-p:PublishSingleFile=true"
-            $publishArgs += "-p:IncludeNativeLibrariesForSelfExtract=true"
-        }
-        
-        try {
-            & dotnet $publishArgs
-            Write-Success "  ✓ $($config.Name) published to $targetPath"
-        } catch {
-            Write-Error "  ✗ Failed to publish $($config.Name)"
-        }
-    }
-    
-    Write-Info ""
-}
-
-# Package (ZIP erstellen)
-if ($Package) {
-    Write-Info "Creating distribution packages..."
-    
-    if (-not $Publish) {
-        Write-Warning "⚠ Publish flag not set. Run with -Publish to create packages."
-    } else {
-        $packagesPath = Join-Path $outputPath "packages"
-        New-Item -Path $packagesPath -ItemType Directory -Force | Out-Null
-        
-        # Hole Version aus .csproj
-        [xml]$csproj = Get-Content $projectFile
-        $version = $csproj.Project.PropertyGroup.Version
-        if (-not $version) {
-            $version = "1.0.0"
-        }
-        
-        foreach ($config in Get-ChildItem -Path $publishPath -Directory) {
-            $zipName = "DeepSeeArch-$version-$($config.Name).zip"
-            $zipPath = Join-Path $packagesPath $zipName
-            
-            Write-Info "  Creating $zipName..."
-            
-            try {
-                Compress-Archive -Path "$($config.FullName)\*" `
-                    -DestinationPath $zipPath `
-                    -Force
-                
-                $zipSize = (Get-Item $zipPath).Length / 1MB
-                Write-Success "  ✓ Package created: $zipName ($([math]::Round($zipSize, 2)) MB)"
-            } catch {
-                Write-Error "  ✗ Failed to create package $zipName"
+            foreach ($tp in $testProjects) {
+                Write-Info "dotnet test: $($tp.FullName)"
+                & dotnet test $tp.FullName --configuration $Configuration --no-build
             }
+            Write-Ok "OK: Tests"
         }
+    } catch {
+        Write-Fail "Tests failed: $($_.Exception.Message)"
+        exit 1
     }
-    
     Write-Info ""
 }
 
-# Zusammenfassung
-Write-Info "================================================"
-Write-Success "Build completed successfully!"
-Write-Info "================================================"
-Write-Info ""
-
+# Publish (optional)
 if ($Publish) {
-    Write-Info "Published binaries are located in:"
-    Write-Info "  $publishPath"
+    Write-Info "Publishing..."
+    try {
+        New-Item -ItemType Directory -Path $PublishPath -Force | Out-Null
+
+        $runtime = "win-x64"
+        $sc = $false
+        if ($SelfContained) { $sc = $true }
+
+        $sf = $false
+        if ($SingleFile) { $sf = $true }
+
+        $args = @(
+            "publish", $ProjectFile,
+            "--configuration", $Configuration,
+            "--output", $PublishPath,
+            "--runtime", $runtime
+        )
+
+        if ($sc) {
+            $args += "--self-contained"
+            $args += "true"
+        } else {
+            $args += "--self-contained"
+            $args += "false"
+        }
+
+        if ($sf) {
+            $args += "/p:PublishSingleFile=true"
+        }
+
+        Write-Info ("dotnet " + ($args -join " "))
+        & dotnet @args
+
+        Write-Ok "OK: Publish -> $PublishPath"
+    } catch {
+        Write-Fail "Publish failed: $($_.Exception.Message)"
+        exit 1
+    }
     Write-Info ""
 }
 
-if ($Package) {
-    Write-Info "Distribution packages are located in:"
-    Write-Info "  $(Join-Path $outputPath 'packages')"
-    Write-Info ""
-}
-
-Write-Info "To run the application:"
-Write-Info "  Debug:   dotnet run --project $projectFile --configuration Debug"
-Write-Info "  Release: dotnet run --project $projectFile --configuration Release"
-Write-Info ""
-
-Write-Success "Done! 🎉"
+Write-Ok "DONE."
+exit 0

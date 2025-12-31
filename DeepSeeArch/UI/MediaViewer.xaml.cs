@@ -1,91 +1,133 @@
+// DeepSeeArch/UI/MediaViewer.xaml.cs
 using System;
 using System.IO;
-using System.Net.Http;
 using System.Windows;
-using Microsoft.Web.WebView2.Core;
 
 namespace DeepSeeArch.UI
 {
     public partial class MediaViewer : Window
     {
-        private string _url;
+        private Uri? _sourceUri;
+        private bool _isWeb;
 
-        public MediaViewer(string url)
+        public MediaViewer(string source)
         {
             InitializeComponent();
-            _url = url;
-            Loaded += async (s, e) => await LoadMediaAsync();
+            LoadSource(source);
         }
 
-        private async System.Threading.Tasks.Task LoadMediaAsync()
+        public void LoadSource(string source)
         {
-            if (_url.EndsWith(".jpg") || _url.EndsWith(".png") || _url.EndsWith(".gif"))
+            if (string.IsNullOrWhiteSpace(source))
             {
-                using var client = new HttpClient();
-                var bytes = await client.GetByteArrayAsync(_url);
-                using var ms = new MemoryStream(bytes);
-                var bmp = new System.Windows.Media.Imaging.BitmapImage();
-                bmp.BeginInit();
-                bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                bmp.StreamSource = ms;
-                bmp.EndInit();
-                ImageControl.Source = bmp;
-                ImageContainer.Visibility = Visibility.Visible;
+                ShowHints(media: true, web: true);
+                SourceText.Text = "";
+                return;
+            }
+
+            SourceText.Text = source.Trim();
+
+            // Determine Uri
+            if (Uri.TryCreate(source, UriKind.Absolute, out var uri))
+            {
+                _sourceUri = uri;
             }
             else
             {
-                await VideoWebView.EnsureCoreWebView2Async();
-                VideoWebView.CoreWebView2.Navigate(_url);
-                VideoWebView.Visibility = Visibility.Visible;
+                // Treat as local path
+                var full = Path.GetFullPath(source);
+                _sourceUri = new Uri(full, UriKind.Absolute);
             }
-        }
-    }
-}
-EOF
-cat /tmp/MediaViewer.xaml.cs
-Ausgabe
 
-using System;
-using System.IO;
-using System.Net.Http;
-using System.Windows;
-using Microsoft.Web.WebView2.Core;
+            // Decide if web
+            _isWeb = _sourceUri.Scheme == Uri.UriSchemeHttp || _sourceUri.Scheme == Uri.UriSchemeHttps;
 
-namespace DeepSeeArch.UI
-{
-    public partial class MediaViewer : Window
-    {
-        private string _url;
-
-        public MediaViewer(string url)
-        {
-            InitializeComponent();
-            _url = url;
-            Loaded += async (s, e) => await LoadMediaAsync();
-        }
-
-        private async System.Threading.Tasks.Task LoadMediaAsync()
-        {
-            if (_url.EndsWith(".jpg") || _url.EndsWith(".png") || _url.EndsWith(".gif"))
+            if (_isWeb)
             {
-                using var client = new HttpClient();
-                var bytes = await client.GetByteArrayAsync(_url);
-                using var ms = new MemoryStream(bytes);
-                var bmp = new System.Windows.Media.Imaging.BitmapImage();
-                bmp.BeginInit();
-                bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
-                bmp.StreamSource = ms;
-                bmp.EndInit();
-                ImageControl.Source = bmp;
-                ImageContainer.Visibility = Visibility.Visible;
+                Tabs.SelectedIndex = 1;
+                ShowHints(media: true, web: false);
+                TryNavigateWeb(_sourceUri);
             }
             else
             {
-                await VideoWebView.EnsureCoreWebView2Async();
-                VideoWebView.CoreWebView2.Navigate(_url);
-                VideoWebView.Visibility = Visibility.Visible;
+                Tabs.SelectedIndex = 0;
+                ShowHints(media: false, web: true);
+                TryLoadMedia(_sourceUri);
             }
+        }
+
+        private void TryLoadMedia(Uri uri)
+        {
+            try
+            {
+                Player.Stop();
+                Player.Source = uri;
+                Player.Play();
+            }
+            catch
+            {
+                ShowHints(media: true, web: true);
+            }
+        }
+
+        private async void TryNavigateWeb(Uri uri)
+        {
+            try
+            {
+                // WebView2 braucht Core initialisiert
+                await Web.EnsureCoreWebView2Async();
+                Web.CoreWebView2.Navigate(uri.ToString());
+            }
+            catch
+            {
+                ShowHints(media: true, web: true);
+            }
+        }
+
+        private void ShowHints(bool media, bool web)
+        {
+            MediaHint.Visibility = media ? Visibility.Visible : Visibility.Collapsed;
+            WebHint.Visibility = web ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void OnPlayClick(object sender, RoutedEventArgs e)
+        {
+            if (_sourceUri == null) return;
+
+            if (_isWeb)
+            {
+                TryNavigateWeb(_sourceUri);
+            }
+            else
+            {
+                Player.Play();
+            }
+        }
+
+        private void OnPauseClick(object sender, RoutedEventArgs e)
+        {
+            if (_isWeb)
+            {
+                // Web hat kein Pause im selben Sinn
+                return;
+            }
+
+            Player.Pause();
+        }
+
+        private void OnStopClick(object sender, RoutedEventArgs e)
+        {
+            if (_isWeb)
+            {
+                try
+                {
+                    Web?.CoreWebView2?.Stop();
+                }
+                catch { }
+                return;
+            }
+
+            Player.Stop();
         }
     }
 }
-✅ FERTIG! Kopiere di

@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <!-- Ollama Integration -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.3650.58" />
     <PackageReference Include="OllamaSharp" Version="2.0.0" />
     
     <!-- Fuzzy String Matching -->
